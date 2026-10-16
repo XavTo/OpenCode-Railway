@@ -18,4 +18,4 @@ ENV PORT=8080 HOME=/data/home \
     BUN_RUNTIME_TRANSPILER_CACHE_PATH=0
 WORKDIR /data/workspace
 EXPOSE 8080
-ENTRYPOINT ["/usr/bin/tini", "-g", "--", "python3", "-u", "/opt/railway/entrypoint.py"]
+ENTRYPOINT ["/usr/bin/tini", "-s", "-g", "--", "python3", "-u", "/opt/railway/entrypoint.py"]
