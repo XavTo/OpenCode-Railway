@@ -39,6 +39,7 @@ Use `/data/workspace` or another directory **inside `/data`** for work you want 
 | `OPENCODE_SERVER_PASSWORD` | `${{secret(32)}}` | Unique generated password; at least 16 characters |
 | `OPENCODE_DISABLE_AUTOUPDATE` | `true` | Updates are made through the versioned template source |
 | `RAILWAY_RUN_UID` | `0` | Allows initial volume ownership setup; the entrypoint then drops to UID 1000 |
+| `RAILWAY_DEPLOYMENT_DRAINING_SECONDS` | `30` | Allows graceful shutdown before Railway stops the container |
 
 AI provider keys are optional at deployment time. Provider configuration saved through the app also persists on the volume. Protect the generated password: access grants control of this coding environment and its provider credentials. This is a single-owner workspace, not an isolated multi-tenant hosting service. Agent tools can execute code within the container. Nested Docker and a full virtual machine are not included.
 
@@ -47,6 +48,8 @@ AI provider keys are optional at deployment time. Provider configuration saved t
 Railway checks **`/healthz`**. It proxies only to OpenCode's authenticated `/global/health` endpoint, so a healthy response requires the OpenCode server to be running. All other API and terminal connections retain OpenCode's own authentication. OpenCode listens only on `127.0.0.1:4096`; Caddy is the only public listener. No extra origins are allowed by default.
 
 Both processes receive shutdown signals. If either exits, the service exits and Railway's restart policy applies. A persistent volume uses one replica and may cause a brief interruption during redeployment. Enable Railway volume backups for important work.
+
+The template configures `/healthz`, a 300-second startup timeout, an on-failure restart policy with five retries, the `/data` volume and an HTTP domain targeting port `8080`. Railway detects the Dockerfile directly; this repository does not rely on the deprecated `railway.json` configuration format.
 
 ## Common Use Cases
 
