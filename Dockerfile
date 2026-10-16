@@ -1,10 +1,15 @@
-FROM ghcr.io/anomalyco/opencode:1.19.2@sha256:37d71f37e3f4a7695f70f63a79f02ff2e5242e5c7e26c88f6fe510e9038fd5ca AS opencode
-FROM caddy:2.11.7-alpine@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f
+FROM caddy:2.11.7-alpine@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f AS caddy
+FROM node:24-bookworm-slim@sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5
 
-RUN apk add --no-cache bash ca-certificates curl git libgcc libstdc++ nodejs npm openssh-client python3 ripgrep tini \
-    && addgroup -g 1000 opencode \
-    && adduser -D -u 1000 -G opencode -h /data/home opencode
-COPY --from=opencode /usr/local/bin/opencode /usr/local/bin/opencode
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    bash ca-certificates curl git openssh-client python3 ripgrep tini libstdc++6 \
+    && rm -rf /var/lib/apt/lists/* \
+    && curl --fail --location --retry 3 https://github.com/anomalyco/opencode/releases/download/v1.19.2/opencode-linux-x64-baseline.tar.gz -o /tmp/opencode.tar.gz \
+    && echo '0f41386deb25608b3bfa4a17795f61782008d5e118eeba5093ade4e052be7ee2  /tmp/opencode.tar.gz' | sha256sum -c - \
+    && tar -xzf /tmp/opencode.tar.gz -C /usr/local/bin opencode \
+    && chmod 755 /usr/local/bin/opencode && rm /tmp/opencode.tar.gz \
+    && opencode --version
+COPY --from=caddy /usr/bin/caddy /usr/bin/caddy
 COPY entrypoint.py /opt/railway/entrypoint.py
 ENV PORT=8080 HOME=/data/home \
     XDG_DATA_HOME=/data/xdg/data XDG_CONFIG_HOME=/data/xdg/config \
@@ -13,4 +18,4 @@ ENV PORT=8080 HOME=/data/home \
     BUN_RUNTIME_TRANSPILER_CACHE_PATH=0
 WORKDIR /data/workspace
 EXPOSE 8080
-ENTRYPOINT ["/sbin/tini", "-g", "--", "python3", "-u", "/opt/railway/entrypoint.py"]
+ENTRYPOINT ["/usr/bin/tini", "-g", "--", "python3", "-u", "/opt/railway/entrypoint.py"]
